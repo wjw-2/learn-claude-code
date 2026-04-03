@@ -96,23 +96,7 @@
 
 ---
 
-## 五、S0-S12 能力对照
 
-| 阶段 | 原讲解能力 | 当前状态 | 对应文件 |
-|---|---|---|---|
-| S0 | 最小 Agent Loop | ✅ 已实现 | `loop.py` |
-| S1 | Bash 工具调用 | ✅ 已实现 | `tool_use.py` |
-| S2 | 多工具调度 | ✅ 已实现 | `tool_use.py` |
-| S3 | Todo 规划 | ✅ 已实现 | `todo_write.py`, `loop.py` |
-| S4 | Sub-Agent | ✅ 已实现 | `subagent.py`, `tool_use.py` |
-| S5 | Skills Loading | ✅ 已实现 | `skills_loader.py`, `tool_use.py` |
-| S6 | Context Compact 三层 | ✅ 已实现 | `context_compact.py`, `loop.py` |
-| S7 | DAG Task System | ✅ 已实现 | `dag_task_system.py`, `tool_use.py` |
-| S8 | Background Task | ✅ 已实现 | `background_task.py`, `loop.py` |
-| S9 | Agent Teams | ✅ 已实现 | `agent_teams.py`, `tool_use.py` |
-| S10 | Team Protocols | ✅ 已实现 | `team_protocols.py`, `tool_use.py` |
-| S11 | Autonomous Mode | ✅ 已实现 | `autonomous_agent.py`, `loop.py`, `tool_use.py` |
-| S12 | Worktree Isolation | ✅ 已实现 | `worktree_task_isolation.py`, `tool_use.py` |
 
 ---
 
@@ -142,25 +126,3 @@ python main.py
 
 ---
 
-## 七、建议的简历写法（STAR 模板）
-
-### 版本 A（项目经历）
-
-**Qwen Nano Agent（类 Claude Code 智能体）**  
-独立设计并开发基于 Qwen 的智能体执行系统，采用 ReAct + Function Calling 架构，构建多 Agent 协作、异步后台任务、DAG 依赖编排、上下文压缩与任务隔离机制。项目可在本地 CLI 直接运行，具备工程化可扩展能力。
-
-### 版本 B（技术亮点）
-
-- 设计统一 Tool Registry（Schema/Handler 解耦），支持 20+ 工具快速扩展。  
-- 实现上下文三层压缩，提升长会话稳定性与执行连续性。  
-- 引入 DAG + Worktree 隔离，降低并行任务冲突风险。  
-- 实现 Sub-Agent 分派与 Team Protocol 流程，支持复杂任务分工协作。  
-
----
-
-## 八、面试可讲的设计取舍
-
-- 为什么不用重型框架：可控性、可调试性、可解释性更强。  
-- 为什么要做三层压缩：避免单一策略在长链路任务中失效。  
-- 为什么做 DAG + worktree：解决“任务依赖关系”和“文件隔离冲突”两个工程痛点。  
-- 为什么要有后台任务：让 Agent 不被长命令阻塞，提高吞吐和交互体验。  
