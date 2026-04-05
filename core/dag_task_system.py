@@ -36,10 +36,10 @@ class DAGTaskManager:
         task = {
             "id": task_id,
             "subject": subject,
-            "description": description,
-            "status": "pending",
-            "blockedBy": blocked_by or [],
-            "owner": "Agent"
+            "description": description,  
+            "status": "pending",  #状态可以是 pending/in_progress/completed
+            "blockedBy": blocked_by or [],  #前置阻塞任务 ID 列表，只有当这些任务都完成了，当前任务才能开始执行
+            "owner": "Agent"  #未来可以扩展为具体的子 Agent 或团队成员
         }
         self.save(task)
         return f"创建高级任务成功:\n{json.dumps(task, indent=2, ensure_ascii=False)}"

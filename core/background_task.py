@@ -41,8 +41,8 @@ class BackgroundTaskManager:
         task_id = str(uuid.uuid4())[:8]
         self.tasks[task_id] = {"status": "running", "command": command}
         
-        thread = threading.Thread(
-            target=self._execute, args=(task_id, command), daemon=True)
+        thread = threading.Thread(target=self._execute, args=(task_id, command), daemon=True)
+        
         thread.start()
         
         return f"后台任务 [bg:{task_id}] 已启动。你可以继续执行其他操作，任务完成后系统会自动通知你。"

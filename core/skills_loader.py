@@ -18,10 +18,10 @@ class SkillLoader:
         # 正文...
         if not text.startswith("---"):
             return {}, text
-        parts = text.split("---", 2)
+        parts = text.split("---", 2)  #分成三部分：前导---、meta、正文；如果没有第三部分，说明格式不对，直接返回空 meta 和原文本
         if len(parts) < 3:
             return {}, text
-        raw_meta = parts[1].strip().splitlines()
+        raw_meta = parts[1].strip().splitlines() #按回车分割成列表
         body = parts[2].strip()
         meta = {}
         for line in raw_meta:
@@ -37,7 +37,7 @@ class SkillLoader:
             return
         for f in sorted(self.skills_dir.rglob("SKILL.md")):
             text = f.read_text(encoding="utf-8")
-            meta, body = self.parse_frontmatter(text)
+            meta, body = self.parse_frontmatter(text)  #解析 frontmatter，虚线之前是meta，虚线之后是body
             name = meta.get("name", f.parent.name)
             self.skills[name] = {"meta": meta, "body": body}
 

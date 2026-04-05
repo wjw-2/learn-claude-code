@@ -6,9 +6,9 @@ from typing import Dict, List
 @dataclass
 class TeamMessage:
     # sender -> receiver 的最小消息单元
-    sender: str
-    receiver: str
-    content: str
+    sender: str  #发信者
+    receiver: str  #收信者
+    content: str  #消息内容
     request_id: str | None = None
 
 
@@ -22,7 +22,7 @@ class MessageBus:
         self.inbox[msg.receiver].append(msg)
 
     def pop_all(self, receiver: str) -> List[TeamMessage]:
-        # 取走并清空收件箱，避免重复消费
+        # 取走收件箱所有任务，并清空收件箱，避免重复消费
         items = list(self.inbox.get(receiver, []))
         self.inbox[receiver].clear()
         return items

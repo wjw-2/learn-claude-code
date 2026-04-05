@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Agent</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
+    --bg-input: #1c1c3a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #a0a0b0;
+    --accent: #e94560;
+    --accent-hover: #ff6b81;
+    --user-bubble: #e94560;
+    --ai-bubble: #16213e;
+    --tool-bg: #0f3460;
+    --tool-border: #1a5276;
+    --tool-header: #1a3a5c;
+    --success: #2ecc71;
+    --border: rgba(255,255,255,0.08);
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header h1 .dot {
+    width: 8px; height: 8px;
+    background: var(--success);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+  .btn-new {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .btn-new:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Messages Area */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    scroll-behavior: smooth;
+  }
+  .messages::-webkit-scrollbar { width: 6px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Welcome Screen */
+  .welcome {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 12px;
+    color: var(--text-secondary);
+  }
+  .welcome h2 { font-size: 1.5rem; color: var(--text-primary); }
+  .welcome p { font-size: 0.9rem; }
+
+  /* Message Bubbles */
+  .msg { display: flex; flex-direction: column; max-width: 80%; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .msg.user { align-self: flex-end; align-items: flex-end; }
+  .msg.ai { align-self: flex-start; align-items: flex-start; }
+
+  .msg-bubble {
+    padding: 12px 16px;
+    border-radius: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.95rem;
+  }
+  .msg.user .msg-bubble {
+    background: var(--user-bubble);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.ai .msg-bubble {
+    background: var(--ai-bubble);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 4px;
+  }
+  .msg-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  /* Tool Cards */
+  .tool-card {
+    background: var(--tool-bg);
+    border: 1px solid var(--tool-border);
+    border-radius: 8px;
+    margin: 4px 0;
+    overflow: hidden;
+    animation: fadeIn 0.3s ease;
+    max-width: 85%;
+    align-self: flex-start;
+  }
+  .tool-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--tool-header);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .tool-header:hover { background: var(--tool-border); }
+  .tool-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--accent);
+    font-family: 'Consolas', 'Courier New', monospace;
+  }
+  .tool-arrow {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    transition: transform 0.2s;
+  }
+  .tool-card.open .tool-arrow { transform: rotate(90deg); }
+  .tool-body {
+    display: none;
+    padding: 10px 12px;
+    font-size: 0.8rem;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+  .tool-card.open .tool-body { display: block; }
+  .tool-section { margin-bottom: 8px; }
+  .tool-section-title {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  .tool-content {
+    background: rgba(0,0,0,0.2);
+    padding: 8px;
+    border-radius: 4px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 0.75rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 150px;
+    overflow-y: auto;
+    color: var(--text-primary);
+  }
+
+  /* Typing indicator */
+  .typing { display: flex; gap: 4px; padding: 8px 0; }
+  .typing span {
+    width: 6px; height: 6px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    animation: typing 1.4s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
+
+  /* Input Area */
+  .input-area {
+    padding: 16px 20px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+  }
+  .input-area textarea {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    resize: none;
+    outline: none;
+    font-family: inherit;
+    max-height: 120px;
+    transition: border-color 0.2s;
+  }
+  .input-area textarea:focus { border-color: var(--accent); }
+  .input-area textarea::placeholder { color: var(--text-secondary); }
+
+  .btn-send {
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background 0.2s;
+    align-self: flex-end;
+  }
+  .btn-send:hover { background: var(--accent-hover); }
+  .btn-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Cursor blink for streaming */
+  .cursor::after {
+    content: '▊';
+    animation: blink 1s infinite;
+    color: var(--accent);
+  }
+  @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span class="dot"></span> Code Agent</h1>
+  <button class="btn-new" onclick="newChat()">+ New Chat</button>
+</div>
+
+<div class="messages" id="messages">
+  <div class="welcome" id="welcome">
+    <h2>Code Agent</h2>
+    <p>LangGraph + Qwen AI Coding Assistant</p>
+    <p style="font-size:0.8rem; margin-top:8px; opacity:0.6;">Type a message below to start a conversation</p>
+  </div>
+</div>
+
+<div class="input-area">
+  <textarea id="input" rows="1" placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
+    onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+  <button class="btn-send" id="sendBtn" onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+const API_BASE = 'http://127.0.0.1:9000';
+let threadId = null;
+let isStreaming = false;
+
+// ---- UI Helpers ----
+function el(tag, className, text) {
+  const e = document.createElement(tag);
+  if (className) e.className = className;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.style.display = 'none';
+}
+
+function addMessage(role, text) {
+  hideWelcome();
+  const container = document.getElementById('messages');
+  const msg = el('div', `msg ${role}`);
+  const label = el('div', 'msg-label', role === 'user' ? 'You' : 'Agent');
+  const bubble = el('div', 'msg-bubble', text);
+  msg.appendChild(label);
+  msg.appendChild(bubble);
+  container.appendChild(msg);
+  scrollToBottom();
+  return bubble;
+}
+
+function addToolCard(name, args) {
+  hideWelcome();
+  const container = document.getElementById('messages');
+  const card = el('div', 'tool-card');
+  const header = el('div', 'tool-header');
+  const nameSpan = el('span', 'tool-name', `⚡ ${name}`);
+  const arrow = el('span', 'tool-arrow', '▶');
+  header.appendChild(nameSpan);
+  header.appendChild(arrow);
+
+  const body = el('div', 'tool-body');
+  const argsSection = el('div', 'tool-section');
+  const argsTitle = el('div', 'tool-section-title', 'Arguments');
+  const argsContent = el('div', 'tool-content');
+  argsContent.textContent = typeof args === 'string' ? args : JSON.stringify(args, null, 2);
+  argsSection.appendChild(argsTitle);
+  argsSection.appendChild(argsContent);
+  body.appendChild(argsSection);
+
+  // Result section (placeholder)
+  const resultSection = el('div', 'tool-section');
+  const resultTitle = el('div', 'tool-section-title', 'Result');
+  const resultContent = el('div', 'tool-content', 'Running...');
+  resultSection.appendChild(resultTitle);
+  resultSection.appendChild(resultContent);
+  body.appendChild(resultSection);
+
+  header.addEventListener('click', () => card.classList.toggle('open'));
+  card.appendChild(header);
+  card.appendChild(body);
+  container.appendChild(card);
+  scrollToBottom();
+  return resultContent;
+}
+
+function addTypingIndicator() {
+  hideWelcome();
+  const container = document.getElementById('messages');
+  const msg = el('div', 'msg ai');
+  msg.id = 'typing-msg';
+  const label = el('div', 'msg-label', 'Agent');
+  const bubble = el('div', 'msg-bubble');
+  const typing = el('div', 'typing');
+  typing.appendChild(el('span'));
+  typing.appendChild(el('span'));
+  typing.appendChild(el('span'));
+  bubble.appendChild(typing);
+  msg.appendChild(label);
+  msg.appendChild(bubble);
+  container.appendChild(msg);
+  scrollToBottom();
+}
+
+function removeTypingIndicator() {
+  const t = document.getElementById('typing-msg');
+  if (t) t.remove();
+}
+
+function scrollToBottom() {
+  const m = document.getElementById('messages');
+  requestAnimationFrame(() => { m.scrollTop = m.scrollHeight; });
+}
+
+// ---- Streaming ----
+async function sendMessage() {
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  if (!text || isStreaming) return;
+
+  input.value = '';
+  autoResize(input);
+  isStreaming = true;
+  document.getElementById('sendBtn').disabled = true;
+
+  addMessage('user', text);
+  addTypingIndicator();
+
+  let currentBubble = null;
+  let currentText = '';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text, thread_id: threadId }),
+    });
+
+    // Save thread_id from response header
+    const newThreadId = res.headers.get('X-Thread-Id');
+    if (newThreadId) threadId = newThreadId;
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep incomplete line
+
+      let eventType = '';
+      let eventData = '';
+
+      for (const line of lines) {
+        if (line.startsWith('event: ')) {
+          eventType = line.slice(7).trim();
+        } else if (line.startsWith('data: ')) {
+          eventData = line.slice(6).trim();
+          if (eventType && eventData) {
+            handleEvent(eventType, eventData);
+            eventType = '';
+            eventData = '';
+          }
+        }
+      }
+    }
+  } catch (err) {
+    removeTypingIndicator();
+    addMessage('ai', `Error: ${err.message}`);
+  } finally {
+    isStreaming = false;
+    document.getElementById('sendBtn').disabled = false;
+    input.focus();
+  }
+
+  function handleEvent(type, data) {
+    let parsed;
+    try { parsed = JSON.parse(data); } catch { return; }
+
+    if (type === 'tool_call') {
+      removeTypingIndicator();
+      addToolCard(parsed.name, parsed.args);
+    } else if (type === 'tool_result') {
+      // Find the last tool result element and update it
+      const results = document.querySelectorAll('.tool-content');
+      if (results.length > 0) {
+        const last = results[results.length - 1];
+        if (last.textContent === 'Running...') {
+          last.textContent = parsed.content || '(no output)';
+        }
+      }
+    } else if (type === 'message') {
+      removeTypingIndicator();
+      if (!currentBubble) {
+        currentBubble = addMessage('ai', '');
+        currentBubble.classList.add('cursor');
+      }
+      currentBubble.textContent = parsed.content;
+      scrollToBottom();
+    } else if (type === 'done') {
+      removeTypingIndicator();
+      if (currentBubble) {
+        currentBubble.classList.remove('cursor');
+        currentBubble = null;
+      }
+    } else if (type === 'error') {
+      removeTypingIndicator();
+      addMessage('ai', `Server error: ${parsed.error}`);
+    }
+  }
+}
+
+// ---- Controls ----
+function newChat() {
+  threadId = null;
+  const container = document.getElementById('messages');
+  container.innerHTML = `
+    <div class="welcome" id="welcome">
+      <h2>Code Agent</h2>
+      <p>LangGraph + Qwen AI Coding Assistant</p>
+      <p style="font-size:0.8rem; margin-top:8px; opacity:0.6;">Type a message below to start a conversation</p>
+    </div>`;
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// Focus input on load
+document.getElementById('input').focus();
+</script>
+</body>
+</html>

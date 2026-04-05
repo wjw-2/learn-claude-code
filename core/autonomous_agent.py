@@ -5,11 +5,11 @@ class AutonomousState:
         # auto_mode 打开后，允许 Agent 在空闲时自动做下一步动作
         self.auto_mode = False
 
-    def enable(self):
+    def enable(self):  #开启自治模式后，Agent 会在每轮结束时根据 idle_rounds 判断是否需要自动调用工具或调整策略，以避免陷入思考死循环
         self.auto_mode = True
         return "autonomous mode enabled"
 
-    def disable(self):
+    def disable(self):  #关闭自治模式后，Agent 将不再自动调整策略，完全依赖工具调用来推动任务进展
         self.auto_mode = False
         return "autonomous mode disabled"
 
